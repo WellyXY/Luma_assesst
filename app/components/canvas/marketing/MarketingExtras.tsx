@@ -13,6 +13,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { CanvasBlock } from "../CanvasBlock";
+import { Draggable } from "../Draggable";
 
 function PortalLayer({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
@@ -356,21 +357,27 @@ export function MarketingExtras() {
         <p className="text-[10px] uppercase tracking-[0.14em] text-text-dim">
           Marketing kit
         </p>
-        <div data-coach="character">
-          <AssetBlock
-            title="Character"
-            asset={character}
-            onPick={() => setPicking("character")}
-          />
-        </div>
-        <div data-coach="product">
-          <AssetBlock
-            title="Product"
-            asset={product}
-            onPick={() => setPicking("product")}
-          />
-        </div>
-        <OutputBlock src="/videos/marketing/01.mp4" />
+        <Draggable>
+          <div data-coach="character">
+            <AssetBlock
+              title="Character"
+              asset={character}
+              onPick={() => setPicking("character")}
+            />
+          </div>
+        </Draggable>
+        <Draggable>
+          <div data-coach="product">
+            <AssetBlock
+              title="Product"
+              asset={product}
+              onPick={() => setPicking("product")}
+            />
+          </div>
+        </Draggable>
+        <Draggable>
+          <OutputBlock src="/videos/marketing/01.mp4" />
+        </Draggable>
       </div>
 
       {picking === "character" ? (

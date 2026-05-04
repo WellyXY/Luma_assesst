@@ -1,18 +1,15 @@
 // app/components/canvas/CanvasBoard.tsx
 "use client";
-import Image from "next/image";
 import {
   useEffect,
   useRef,
   useState,
-  type MouseEvent,
   type PointerEvent,
   type WheelEvent,
 } from "react";
-import { ChevronDown } from "lucide-react";
 import type { CanvasAsset, CanvasSpec } from "@/data/canvasSpecs";
-import { VariantPlaceholder } from "./VariantPlaceholder";
-import { CanvasBlock } from "./CanvasBlock";
+import { BrandingAssets } from "./BrandingAssets";
+import { Draggable } from "./Draggable";
 import { CanvasChat } from "./CanvasChat";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { CanvasZoom } from "./CanvasZoom";
@@ -41,7 +38,7 @@ Dialogue (natural, calm, ~15 sec):
   },
 ];
 
-type StaticBlockId = "header" | "step-1" | "step-2" | "variants" | "workspace";
+type BlockId = "branding" | "pipe-1" | "pipe-2" | "pipe-3";
 
 type PipelinePhase =
   | { kind: "idle" }
@@ -57,17 +54,12 @@ export function CanvasBoard({
   card: CanvasAsset;
   spec: CanvasSpec;
 }) {
-  const [removed, setRemoved] = useState<Set<StaticBlockId | "pipe-1" | "pipe-2" | "pipe-3">>(
-    new Set(),
-  );
+  const [removed, setRemoved] = useState<Set<BlockId>>(new Set());
   const [phase, setPhase] = useState<PipelinePhase>({ kind: "idle" });
-  const [headerCollapsed, setHeaderCollapsed] = useState(false);
   const [retrySeed, setRetrySeed] = useState(0);
 
-  const remove = (id: StaticBlockId | "pipe-1" | "pipe-2" | "pipe-3") =>
-    setRemoved((s) => new Set(s).add(id));
-  const visible = (id: StaticBlockId | "pipe-1" | "pipe-2" | "pipe-3") =>
-    !removed.has(id);
+  const remove = (id: BlockId) => setRemoved((s) => new Set(s).add(id));
+  const visible = (id: BlockId) => !removed.has(id);
 
   // Drive the running animation forward.
   useEffect(() => {
@@ -88,8 +80,6 @@ export function CanvasBoard({
       setRetrySeed((s) => s + 1);
       return;
     }
-    setHeaderCollapsed(true);
-    remove("workspace");
     setPhase({ kind: "running", current: 1 });
   };
 
@@ -147,8 +137,6 @@ export function CanvasBoard({
     applyTransform();
   };
 
-  const stop = (e: MouseEvent) => e.stopPropagation();
-
   return (
     <div className="relative flex-1 overflow-hidden">
       <div
@@ -171,118 +159,13 @@ export function CanvasBoard({
           <div className="flex w-max items-start gap-12 px-12 py-10 pr-[340px]">
             <div className="flex w-[560px] shrink-0 flex-col gap-7">
               <p className="text-[10px] uppercase tracking-[0.14em] text-text-dim">
-                Description
+                Branding assets
               </p>
 
-              {visible("header") ? (
-                headerCollapsed ? (
-                  <CanvasBlock
-                    onDelete={() => remove("header")}
-                    className="px-3 py-2 -mx-3"
-                  >
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setHeaderCollapsed(false);
-                      }}
-                      onMouseDown={stop}
-                      className="flex w-full items-center justify-between text-left"
-                    >
-                      <span className="text-[14px] font-semibold text-text">
-                        {spec.displayTitle}
-                      </span>
-                      <ChevronDown className="h-4 w-4 text-text-dim" />
-                    </button>
-                  </CanvasBlock>
-                ) : (
-                  <CanvasBlock
-                    onDelete={() => remove("header")}
-                    className="px-3 py-3 -mx-3 -my-3"
-                  >
-                    <div className="flex flex-col gap-4" onMouseDown={stop}>
-                      <h1 className="text-[40px] leading-[1.05] font-bold tracking-tight text-text">
-                        {spec.displayTitle}
-                      </h1>
-                      <p className="text-[14px] leading-relaxed text-text-muted">
-                        {spec.description}
-                      </p>
-                    </div>
-                  </CanvasBlock>
-                )
-              ) : null}
-
-              {visible("header") && !headerCollapsed && (visible("step-1") || visible("step-2")) ? (
-                <div className="border-t border-border" />
-              ) : null}
-
-              {!headerCollapsed && visible("step-1") ? (
-                <CanvasBlock onDelete={() => remove("step-1")} className="px-3 py-3 -mx-3 -my-3">
-                  <div className="flex items-start gap-6" onMouseDown={stop}>
-                    <div className="flex flex-1 flex-col gap-2">
-                      <h2 className="text-[20px] font-bold text-text">
-                        {spec.steps[0]?.title}:
-                      </h2>
-                      <p className="text-[13px] leading-relaxed text-text-muted">
-                        {spec.steps[0]?.body}
-                      </p>
-                    </div>
-                    <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-card bg-surface">
-                      <Image
-                        src={card.image}
-                        alt={card.title}
-                        fill
-                        sizes="128px"
-                        className="object-cover"
-                      />
-                    </div>
-                  </div>
-                </CanvasBlock>
-              ) : null}
-
-              {!headerCollapsed && visible("step-2") && spec.steps[1] ? (
-                <CanvasBlock onDelete={() => remove("step-2")} className="px-3 py-3 -mx-3 -my-3">
-                  <div className="flex flex-col gap-2" onMouseDown={stop}>
-                    <h2 className="text-[20px] font-bold text-text">
-                      {spec.steps[1].title}:
-                    </h2>
-                    <p className="text-[13px] leading-relaxed text-text-muted">
-                      {spec.steps[1].body}
-                    </p>
-                  </div>
-                </CanvasBlock>
-              ) : null}
-
-              {!headerCollapsed && (visible("step-1") || visible("step-2")) && visible("variants") ? (
-                <div className="border-t border-border" />
-              ) : null}
-
-              {!headerCollapsed && visible("variants") ? (
-                <CanvasBlock onDelete={() => remove("variants")} className="px-3 py-3 -mx-3 -my-3">
-                  <div className="grid grid-cols-3 gap-3" onMouseDown={stop}>
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="relative aspect-square overflow-hidden rounded-card bg-surface"
-                      >
-                        {i === 0 ? (
-                          <Image
-                            src={card.image}
-                            alt={`${card.title} variant ${i + 1}`}
-                            fill
-                            sizes="180px"
-                            className="object-cover"
-                          />
-                        ) : (
-                          <VariantPlaceholder
-                            category={card.category}
-                            seed={i + card.id.length}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </CanvasBlock>
+              {visible("branding") ? (
+                <Draggable>
+                  <BrandingAssets onDelete={() => remove("branding")} />
+                </Draggable>
               ) : null}
             </div>
 
@@ -290,33 +173,39 @@ export function CanvasBoard({
             {phase.kind !== "idle" ? (
               <div key={retrySeed} className="flex flex-col gap-4">
                 {visible("pipe-1") ? (
-                  <StepBlock
-                    kind="generate"
-                    status={stepStatus(1)}
-                    thumbs={thumbsFor(1)}
-                    onRetry={() => setRetrySeed((s) => s + 1)}
-                    onFork={() => {}}
-                    onDelete={() => remove("pipe-1")}
-                  />
+                  <Draggable>
+                    <StepBlock
+                      kind="generate"
+                      status={stepStatus(1)}
+                      thumbs={thumbsFor(1)}
+                      onRetry={() => setRetrySeed((s) => s + 1)}
+                      onFork={() => {}}
+                      onDelete={() => remove("pipe-1")}
+                    />
+                  </Draggable>
                 ) : null}
                 {visible("pipe-2") && (phase.kind === "done" || (phase.kind === "running" && phase.current >= 2)) ? (
-                  <StepBlock
-                    kind="refine"
-                    status={stepStatus(2)}
-                    thumbs={thumbsFor(2)}
-                    onRetry={() => setRetrySeed((s) => s + 1)}
-                    onFork={() => {}}
-                    onDelete={() => remove("pipe-2")}
-                  />
+                  <Draggable>
+                    <StepBlock
+                      kind="refine"
+                      status={stepStatus(2)}
+                      thumbs={thumbsFor(2)}
+                      onRetry={() => setRetrySeed((s) => s + 1)}
+                      onFork={() => {}}
+                      onDelete={() => remove("pipe-2")}
+                    />
+                  </Draggable>
                 ) : null}
                 {visible("pipe-3") && (phase.kind === "done" || (phase.kind === "running" && phase.current >= 3)) ? (
-                  <StepBlock
-                    kind="deliver"
-                    status={stepStatus(3)}
-                    thumbs={thumbsFor(3)}
-                    onRetry={() => setRetrySeed((s) => s + 1)}
-                    onDelete={() => remove("pipe-3")}
-                  />
+                  <Draggable>
+                    <StepBlock
+                      kind="deliver"
+                      status={stepStatus(3)}
+                      thumbs={thumbsFor(3)}
+                      onRetry={() => setRetrySeed((s) => s + 1)}
+                      onDelete={() => remove("pipe-3")}
+                    />
+                  </Draggable>
                 ) : null}
               </div>
             ) : null}
